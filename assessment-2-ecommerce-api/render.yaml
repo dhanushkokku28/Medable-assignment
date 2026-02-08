@@ -3,6 +3,7 @@ services:
     name: ecommerce-api
     env: node
     plan: free
+    root: .
     buildCommand: npm install
     startCommand: npm start
     envVars:
