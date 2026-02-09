@@ -13,18 +13,72 @@ Your mission is to:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- Netlify CLI (for local development)
+- **Node.js** v18 or higher ([Download](https://nodejs.org))
+- **npm** (comes with Node.js)
+- **Git** for version control
 
-### Installation
+### Installation & Setup
 
+**Step 1: Install dependencies**
 ```bash
 npm install
+```
+
+**Step 2: Start the server**
+```bash
+npm start
+```
+
+**Expected Output:**
+```
+✅ Products initialized once (CACHED)
+🚀 Server running on http://localhost:3002
+```
+
+**Step 3: Verify it's running**
+Open a new terminal and test:
+```bash
+curl http://localhost:3002/health
+```
+
+### Development Mode (with auto-reload)
+
+If you want the server to automatically restart when you make code changes:
+```bash
 npm run dev
 ```
 
-The API will be available at `http://localhost:8888`
+This uses **nodemon** to watch for file changes.
+
+### Access Points
+
+| Resource | URL |
+|----------|-----|
+| **API Base** | `http://localhost:3002` |
+| **Products** | `http://localhost:3002/api/products` |
+| **Health Check** | `http://localhost:3002/health` |
+| **Admin Metrics** | `http://localhost:3002/admin/metrics` |
+| **Frontend** | `http://localhost:3002/` (index.html) |
+
+### Troubleshooting
+
+**Port 3002 already in use?**
+```bash
+# Kill all node processes
+Get-Process node | Stop-Process -Force
+
+# Wait 2 seconds
+Start-Sleep -Seconds 2
+
+# Restart server
+npm start
+```
+
+**Still having issues?**
+Change the port in `server.js` line 11:
+```javascript
+const PORT = process.env.PORT || 3003;  // Change to different port
+```
 
 ## 📚 API Documentation
 
@@ -34,30 +88,56 @@ The API will be available at `http://localhost:8888`
 Get paginated list of products with search and filtering
 ```bash
 # Basic usage
-curl "http://localhost:8888/api/products"
+curl "http://localhost:3002/api/products"
 
 # With pagination and search
-curl "http://localhost:8888/api/products?page=1&limit=10&search=electronics&category=Electronics"
+curl "http://localhost:3002/api/products?page=1&limit=10&search=electronics&category=Electronics"
 
-# Try the admin parameter (security issue!)
-curl "http://localhost:8888/api/products?admin=true"
+# With fuzzy search (tolerates typos)
+curl "http://localhost:3002/api/products?search=samung&fuzzy=true"
+
+# Export as JSON
+curl "http://localhost:3002/api/products/export?format=json&limit=5"
+
+# Export as CSV
+curl "http://localhost:3002/api/products/export?format=csv"
 ```
 
 #### GET /api/products/:id
 Get single product by ID
 ```bash
-curl "http://localhost:8888/api/products/1"
+curl "http://localhost:3002/api/products/1"
+```
 
-# Try internal parameter (security issue!)
-curl "http://localhost:8888/api/products/1?internal=yes"
+#### GET /api/products/:id/recommendations
+Get product recommendations
+```bash
+curl "http://localhost:3002/api/products/1/recommendations"
 ```
 
 #### POST /api/products
-Create new product
+Create new product (requires JWT authentication)
 ```bash
-curl -X POST "http://localhost:8888/api/products" \
+curl -X POST "http://localhost:3002/api/products" \
   -H "Content-Type: application/json" \
-  -d '{"name":"New Product","price":99.99,"category":"Electronics"}'
+  -H "Authorization: Bearer admin" \
+  -d '{"name":"New Product","price":99.99,"category":"Electronics","description":"Great product","quantity":100}'
+```
+
+#### PUT /api/products/:id
+Update product (requires JWT authentication)
+```bash
+curl -X PUT "http://localhost:3002/api/products/1" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer admin" \
+  -d '{"price":149.99,"quantity":50}'
+```
+
+#### DELETE /api/products/:id
+Delete product (requires JWT authentication)
+```bash
+curl -X DELETE "http://localhost:3002/api/products/1" \
+  -H "Authorization: Bearer admin"
 ```
 
 ### Cart Management
@@ -65,17 +145,56 @@ curl -X POST "http://localhost:8888/api/products" \
 #### GET /api/cart
 Get user's cart
 ```bash
-curl "http://localhost:8888/api/cart" \
-  -H "X-User-Id: user123"
+curl "http://localhost:3002/api/cart" \
+  -H "Authorization: Bearer user-token"
 ```
 
 #### POST /api/cart
 Add item to cart
 ```bash
-curl -X POST "http://localhost:8888/api/cart" \
+curl -X POST "http://localhost:3002/api/cart" \
   -H "Content-Type: application/json" \
-  -H "X-User-Id: user123" \
+  -H "Authorization: Bearer user-token" \
   -d '{"productId":"1","quantity":2}'
+```
+
+#### PUT /api/cart
+Update cart item quantity
+```bash
+curl -X PUT "http://localhost:3002/api/cart" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer user-token" \
+  -d '{"productId":"1","quantity":5}'
+```
+
+#### DELETE /api/cart/:productId
+Remove item from cart
+```bash
+curl -X DELETE "http://localhost:3002/api/cart?productId=1" \
+  -H "Authorization: Bearer user-token"
+```
+
+### Admin Endpoints
+
+#### GET /admin/metrics
+View real-time API metrics and performance stats (requires authentication)
+```bash
+curl "http://localhost:3002/admin/metrics" \
+  -H "Authorization: Bearer admin"
+```
+
+#### GET /admin/audit-logs
+View audit logs of all API requests (requires authentication)
+```bash
+curl "http://localhost:3002/admin/audit-logs" \
+  -H "Authorization: Bearer admin"
+```
+
+#### GET /admin/rate-limit-status
+Check rate limiting status per IP (requires authentication)
+```bash
+curl "http://localhost:3002/admin/rate-limit-status" \
+  -H "Authorization: Bearer admin"
 ```
 
 ## 🐛 Critical Performance Issues
